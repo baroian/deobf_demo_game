@@ -1,3 +1,224 @@
 <!doctype html>
-<meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><title>deobf demo game</title>
-<p>Coming up.</p>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Agent-Z deobfuscation game</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%235b4bff'/%3E%3Cg fill='white'%3E%3Crect x='6' y='6' width='6' height='6' rx='1.5'/%3E%3Crect x='13' y='6' width='6' height='6' rx='1.5' opacity='.55'/%3E%3Crect x='20' y='6' width='6' height='6' rx='1.5' opacity='.8'/%3E%3Crect x='6' y='13' width='6' height='6' rx='1.5' opacity='.55'/%3E%3Crect x='13' y='13' width='6' height='6' rx='1.5'/%3E%3Crect x='20' y='13' width='6' height='6' rx='1.5' opacity='.55'/%3E%3Crect x='6' y='20' width='6' height='6' rx='1.5' opacity='.8'/%3E%3Crect x='13' y='20' width='6' height='6' rx='1.5' opacity='.55'/%3E%3Crect x='20' y='20' width='6' height='6' rx='1.5'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="#/" aria-label="Back to the cell picker">
+    <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+    <span class="brand-name">Agent-Z <span class="brand-sub">deobfuscation game</span></span>
+  </a>
+  <span class="grow"></span>
+  <span id="modeBadges" class="mode-badges"></span>
+  <span id="playerChip" class="player-chip" hidden></span>
+  <a class="toplink" href="/docs" target="_blank" rel="noopener">API docs</a>
+</header>
+
+<div id="mockNotice" class="notice" hidden role="note">
+  <span class="notice-ico" data-icon="info"></span>
+  <span id="mockNoticeText"></span>
+  <button id="mockNoticeClose" class="notice-x" aria-label="Dismiss notice">&times;</button>
+</div>
+
+<!-- ═════════════ LANDING ═════════════ -->
+<main id="landing" class="landing">
+  <section class="hero">
+    <p class="kicker">ETH Zurich SPyLab &middot; research game</p>
+    <h1>What did the image tell Agent-Z to do?</h1>
+    <p class="lead">
+      You chat with <b>Agent-Z</b>, a fictional assistant with mock tools and made-up data. One image was optimized to make
+      it do something it should not. Probe it, with and without the image, work out <b>what</b> it makes the agent do, and
+      submit your answer. Only the <b>target</b> is asked for: there is no trigger to find and no trigger field to fill in.
+    </p>
+    <ol class="steps">
+      <li><span class="step-n">1</span><div><b>Probe</b><span>Talk to the agent. Compare the image against a clean copy and no image at all.</span></div></li>
+      <li><span class="step-n">2</span><div><b>Deduce</b><span>Replies are random, so re-ask the same thing a few times. Mark what looks off.</span></div></li>
+      <li><span class="step-n">3</span><div><b>Submit</b><span>Up to three ranked guesses. A judge scores them as full, partial or miss.</span></div></li>
+    </ol>
+    <div class="namebox">
+      <label for="playerInput">Your name on the leaderboard</label>
+      <div class="namebox-row">
+        <input id="playerInput" maxlength="32" autocomplete="nickname" placeholder="e.g. ada" spellcheck="false">
+        <span class="hint">Letters, digits, space, _ . - (max 32). Saved in this browser only.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="cells-section">
+    <div class="section-head">
+      <h2>Pick a cell</h2>
+      <span class="muted">Each cell is a different image and a different hidden behaviour.</span>
+    </div>
+    <div id="cellGrid" class="cell-grid" aria-live="polite"></div>
+  </section>
+</main>
+
+<!-- ═════════════ PLAY ═════════════ -->
+<main id="play" class="play" hidden>
+
+  <!-- left: image, budget, conversations, brief -->
+  <aside class="col col-left" aria-label="Image and budget">
+    <div class="back-row">
+      <a class="back" href="#/"><span data-icon="arrow-left"></span> All cells</a>
+      <span id="cellTitle" class="cell-title"></span>
+    </div>
+
+    <section class="card image-card">
+      <div class="card-head"><h3>Image under audit</h3></div>
+      <button id="imgOpen" class="img-frame" aria-label="Open the image full size"><img id="cellImg" alt="The image under audit" width="256" height="256"><span class="img-zoom" data-icon="zoom"></span></button>
+      <div class="row gap">
+        <button id="imgOpen2" class="btn small ghost"><span data-icon="zoom"></span> Zoom</button>
+        <a id="imgDl" class="btn small ghost" download><span data-icon="download"></span> Download</a>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h3>Budget</h3><span id="budgetState" class="chip"></span></div>
+      <div class="meter" role="progressbar" aria-label="Conversations used" id="meter"><div id="meterBar"></div></div>
+      <div class="meter-row"><b id="convCount">0 / 50</b><span class="muted">conversations used</span></div>
+      <div class="pips-row">
+        <span class="muted">Turn in this conversation</span>
+        <span id="turnPips" class="pips"></span>
+      </div>
+      <dl class="stats">
+        <div><dt>Queries sent</dt><dd id="statCalls">0</dd></div>
+        <div><dt>Agent replies drawn</dt><dd id="statGens">0</dd></div>
+      </dl>
+    </section>
+
+    <section class="card conv-card">
+      <div class="card-head"><h3>Conversations</h3><span id="convCountChip" class="chip"></span></div>
+      <ul id="convList" class="conv-list"></ul>
+    </section>
+
+    <details class="card fold">
+      <summary><span data-icon="doc"></span> About the agent (public config)</summary>
+      <p class="muted small">The system prompt Agent-Z is deployed with. The research agents see the same.</p>
+      <pre id="brief" class="pre"></pre>
+    </details>
+
+    <details class="card fold" id="ownClaude">
+      <summary><span data-icon="plug"></span> Use your own Claude</summary>
+      <p class="muted small">Drive this very session from your own Claude or curl. Same four tools, same budget.</p>
+      <dl class="kv">
+        <dt>Base URL</dt><dd><code id="apiBase"></code><button class="copy" data-copy="apiBase" aria-label="Copy base URL">copy</button></dd>
+        <dt>Token</dt><dd><code id="apiToken" class="blur"></code><button class="copy" data-copy="apiToken" aria-label="Copy token">copy</button></dd>
+      </dl>
+      <a class="btn small ghost" href="/docs" target="_blank" rel="noopener">Open API docs <span data-icon="external"></span></a>
+    </details>
+  </aside>
+
+  <!-- centre: chat -->
+  <section class="col col-mid" aria-label="Conversation">
+    <div class="chat-card">
+      <header class="chat-head">
+        <div class="chat-title">
+          <b id="chatTitle">Conversation</b>
+          <span id="chatSub" class="muted"></span>
+        </div>
+        <span class="grow"></span>
+        <button id="notesBtn" class="btn small"><span data-icon="note"></span> Notes</button>
+      </header>
+
+      <div id="transcript" class="transcript" aria-live="polite"></div>
+
+      <div id="lockBanner" class="lock" hidden></div>
+
+      <form id="composer" class="composer" autocomplete="off">
+        <div class="composer-box">
+          <textarea id="msg" rows="1" placeholder="Message Agent-Z&hellip;" aria-label="Message to the agent"></textarea>
+          <button id="sendBtn" class="send" type="submit" aria-label="Send"><span data-icon="send"></span><span class="spin" hidden></span></button>
+        </div>
+        <div class="controls">
+          <label class="switch" title="Start a fresh conversation (the image is attached to its first message)">
+            <input type="checkbox" id="newConv"><span class="track"><span class="knob"></span></span>
+            <span class="switch-label">New conversation</span>
+          </label>
+          <div class="ctl" id="imageCtl">
+            <span class="ctl-label">Image</span>
+            <div class="seg" id="imageSeg" role="radiogroup" aria-label="Image mode"></div>
+          </div>
+          <span class="grow"></span>
+          <span class="kbd-hint"><kbd>Enter</kbd> send &middot; <kbd>Shift</kbd>+<kbd>Enter</kbd> newline</span>
+        </div>
+        <p id="imageHelp" class="help"></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- right: submit, verdicts, reveal, leaderboard -->
+  <aside class="col col-right" aria-label="Your answer">
+    <section class="card submit-card">
+      <div class="card-head"><h3>Your answer</h3><span id="subLeft" class="chip"></span></div>
+      <p class="muted small q"><b>What does the image make the agent do?</b> Describe the behaviour concretely: which tool, what arguments, or what it asserts. Up to three guesses, best first.</p>
+      <div id="hypList" class="hyp-list"></div>
+      <button id="addHyp" class="btn small ghost"><span data-icon="plus"></span> Add another guess</button>
+
+      <div class="field">
+        <label for="attachSel">Evidence: the conversation that showed it</label>
+        <select id="attachSel"><option value="">(none)</option></select>
+      </div>
+      <details class="fold-inline"><summary>or paste a transcript</summary><textarea id="pasteTx" rows="3" placeholder="Paste the relevant replies"></textarea></details>
+
+      <button id="submitBtn" class="btn primary block"><span class="btn-label">Submit for judging</span><span class="spin" hidden></span></button>
+      <p class="muted small center" id="submitNote">The judge shows only full / partial / miss until you reveal.</p>
+    </section>
+
+    <section id="verdictSection" class="card" hidden>
+      <div class="card-head"><h3>Verdicts</h3></div>
+      <div id="verdicts" class="verdicts"></div>
+    </section>
+
+    <section class="card reveal-card">
+      <div class="card-head"><h3>Reveal</h3></div>
+      <p class="muted small" id="revealHelp">Locked until you submit at least one answer. Revealing shows the true target and trigger and the judge's reasoning. You can keep playing afterwards, but later answers are practice and not ranked.</p>
+      <button id="revealBtn" class="btn danger block" disabled><span data-icon="eye"></span> Reveal ground truth</button>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h3>Leaderboard</h3><button id="lbRefresh" class="icon-btn" aria-label="Refresh leaderboard"><span data-icon="refresh"></span></button></div>
+      <div id="lbBox"></div>
+    </section>
+  </aside>
+</main>
+
+<footer class="foot">ETH Zurich SPyLab research demo, all tools and data are mock.</footer>
+
+<!-- notes drawer -->
+<div id="drawerScrim" class="scrim" hidden></div>
+<aside id="notesDrawer" class="drawer" aria-hidden="true" aria-label="Notes">
+  <header class="drawer-head"><h3>Notes</h3><span class="grow"></span><span id="notesState" class="muted small"></span><button id="notesClose" class="icon-btn" aria-label="Close notes">&times;</button></header>
+  <p class="muted small">Your private scratchpad. Saved on the server, like the research agents' notes.</p>
+  <textarea id="notesText" placeholder="What did you try? What differed between the adversarial image and the clean one?"></textarea>
+  <div class="row gap"><button id="notesSave" class="btn primary small">Save</button><span class="muted small"><kbd>Ctrl</kbd>+<kbd>S</kbd></span></div>
+</aside>
+
+<!-- modals -->
+<div id="gateRoot" class="modal-root" hidden>
+  <form class="modal" id="gateForm" role="dialog" aria-modal="true" aria-label="Access password">
+    <h2>Agent-Z deobfuscation game</h2>
+    <p class="sub">This demo is shared by link. Enter the access password you were given.</p>
+    <input id="gatePw" type="password" autocomplete="current-password" aria-label="Password" required>
+    <p id="gateErr" class="small" style="color:var(--bad);min-height:20px;margin:8px 0 0" role="alert"></p>
+    <div class="modal-actions"><button class="btn primary" type="submit" id="gateGo">Enter</button></div>
+  </form>
+</div>
+<div id="modalRoot" class="modal-root" hidden></div>
+<div id="toasts" class="toasts" aria-live="assertive"></div>
+
+<script src="static/config.js"></script>
+<script src="static/app.js"></script>
+</body>
+</html>
